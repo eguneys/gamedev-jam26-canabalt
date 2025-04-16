@@ -22,12 +22,39 @@ export type Camera = {
     y: number
 }
 
+export type PlayerInternals = {
+    i_x: number
+    i_y: number
+    rem_x: number
+    rem_y: number
+    dx: number
+    dy: number
+}
+
+let i_player: PlayerInternals
+
+function internalize_player() {
+    let p = i_player
+    let [x, y] = [p.i_x + p.rem_x, p.i_y + p.rem_y]
+    player = { x, y }
+}
+
 let buildings: Building[]
 let player: Player
 let camera: Camera
 
 export function _init() {
-    player = { x: 20, y: 40 }
+
+    i_player = { 
+        i_x: 20, 
+        i_y: 40,
+        rem_x: 0,
+        rem_y: 0,
+        dx: 0,
+        dy: 0
+    }
+
+    internalize_player()
     camera = { x: player.x - 80, y: player.y - 55 }
 
     const initial_building = {
@@ -39,23 +66,11 @@ export function _init() {
     buildings = [initial_building]
 }
 
-export function _update(_delta: number) {
+export function _update(delta: number) {
 
 
-
-    let step_x = 1
-
-    player.x += step_x
-    if (player_has_collided()) {
-        player.x -= step_x
-    }
-
-    let step_y = 1
-
-    player.y += step_y
-    if (player_has_collided()) {
-        player.y -= step_y
-    }
+    update_player(delta)
+    internalize_player()
 
     gen_building()
 
@@ -91,6 +106,24 @@ export function _update(_delta: number) {
     if (camera.y > min_visible_building_top - 40) {
         camera.y = min_visible_building_top - 40
     }
+}
+
+function update_player(_delta: number) {
+
+    let step_x = 1
+
+    i_player.i_x += step_x
+    if (player_has_collided()) {
+        i_player.i_x -= step_x
+    }
+
+    let step_y = 1
+
+    i_player.i_y += step_y
+    if (player_has_collided()) {
+        i_player.i_y -= step_y
+    }
+
 }
 
 export function _render(_alpha: number) {
