@@ -29,7 +29,7 @@ function Canvas(width: number, height: number): Canvas {
         ctx.setTransform(1, 0, 0, 1, x, y)
     }
 
-    function reset_transform(x: number, y: number) {
+    function reset_transform() {
         ctx.resetTransform()
     }
 
