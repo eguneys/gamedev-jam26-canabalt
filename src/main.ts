@@ -1,24 +1,57 @@
+import { Loop } from './loop_input'
 import './style.css'
-import typescriptLogo from './typescript.svg'
-import viteLogo from '/vite.svg'
-import { setupCounter } from './counter.ts'
+import { _render, _update } from './ur'
 
-document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
-  <div>
-    <a href="https://vite.dev" target="_blank">
-      <img src="${viteLogo}" class="logo" alt="Vite logo" />
-    </a>
-    <a href="https://www.typescriptlang.org/" target="_blank">
-      <img src="${typescriptLogo}" class="logo vanilla" alt="TypeScript logo" />
-    </a>
-    <h1>Vite + TypeScript</h1>
-    <div class="card">
-      <button id="counter" type="button"></button>
-    </div>
-    <p class="read-the-docs">
-      Click on the Vite and TypeScript logos to learn more
-    </p>
-  </div>
-`
+type Canvas = {
+  canvas: HTMLCanvasElement
+  rect(x: number, y: number, w: number, h: number, color: Color): void
+  clear(): void
+}
 
-setupCounter(document.querySelector<HTMLButtonElement>('#counter')!)
+type Color = string
+
+function Canvas(width: number, height: number): Canvas {
+
+    const canvas = document.createElement('canvas')
+    canvas.width = width
+    canvas.height = height
+    const ctx = canvas.getContext('2d')!
+    ctx.imageSmoothingEnabled = false
+
+    function rect(x: number, y: number, width: number, height: number, color: Color) {
+        ctx.fillStyle = color
+        ctx.fillRect(x, y, width, height)
+    }
+
+    function clear() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height)
+    }
+
+    return {
+      canvas,
+      clear,
+      rect
+    }
+}
+
+export let c: Canvas
+
+
+function app(el: HTMLElement) {
+
+  c = Canvas(160, 90)
+
+  Loop(_update, _render)
+
+  c.canvas.classList.add('pixelated')
+
+
+  let content = document.createElement('div')
+  content.classList.add('content')
+
+  content.appendChild(c.canvas)
+  el.appendChild(content)
+}
+
+
+app(document.querySelector('#app')!)
