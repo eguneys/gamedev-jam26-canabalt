@@ -1,45 +1,12 @@
 import { Loop } from './loop_input'
 import './style.css'
-import { _render, _update } from './ur'
-
-type Canvas = {
-  canvas: HTMLCanvasElement
-  rect(x: number, y: number, w: number, h: number, color: Color): void
-  clear(): void
-}
-
-type Color = string
-
-function Canvas(width: number, height: number): Canvas {
-
-    const canvas = document.createElement('canvas')
-    canvas.width = width
-    canvas.height = height
-    const ctx = canvas.getContext('2d')!
-    ctx.imageSmoothingEnabled = false
-
-    function rect(x: number, y: number, width: number, height: number, color: Color) {
-        ctx.fillStyle = color
-        ctx.fillRect(x, y, width, height)
-    }
-
-    function clear() {
-        ctx.clearRect(0, 0, canvas.width, canvas.height)
-    }
-
-    return {
-      canvas,
-      clear,
-      rect
-    }
-}
-
-export let c: Canvas
+import { _init, _render, _update } from './ur'
+import { c } from './canvas'
 
 
 function app(el: HTMLElement) {
 
-  c = Canvas(160, 90)
+  _init()
 
   Loop(_update, _render)
 
