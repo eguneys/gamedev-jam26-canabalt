@@ -98,8 +98,9 @@ export function _update(delta: number) {
 
     gen_building()
 
-    camera.x = lerp(camera.x, player.x - 80, 0.1)
-    camera.y = lerp(camera.y, player.y - 55, 0.1)
+    internalize_player()
+    camera.x = lerp(camera.x, player.x - 80, 0.55)
+    camera.y = lerp(camera.y, player.y - 55, 0.55)
 
 
     let left_visible_building = buildings.find(_ => _.right > camera.x && _.right < camera.x + 160)

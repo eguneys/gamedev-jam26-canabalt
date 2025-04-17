@@ -17,6 +17,8 @@ function Canvas(width: number, height: number): Canvas {
     ctx.imageSmoothingEnabled = false
 
     function rect(x: number, y: number, width: number, height: number, color: Color) {
+        x = Math.floor(x)
+        y = Math.floor(y)
         ctx.fillStyle = color
         ctx.fillRect(x, y, width, height)
     }
@@ -26,6 +28,8 @@ function Canvas(width: number, height: number): Canvas {
     }
 
     function set_transform(x: number, y: number) {
+        x = Math.floor(x)
+        y = Math.floor(y)
         ctx.setTransform(1, 0, 0, 1, x, y)
     }
 
