@@ -1,11 +1,12 @@
 import { Loop } from './loop_input'
 import './style.css'
-import { _init, _render, _update } from './ur'
+import { _set_el, _init, _render, _update } from './ur'
 import { c } from './canvas'
 
 
 function app(el: HTMLElement) {
 
+  _set_el(el)
   _init()
 
   Loop(_update, _render)

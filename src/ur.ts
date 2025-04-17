@@ -1,4 +1,5 @@
 import { c } from './canvas'
+import { TouchMouse } from './loop_input'
 
 export const PURPLE = '#5e4069'
 export const BLACK = '#120a19'
@@ -22,6 +23,20 @@ export type Camera = {
     y: number
 }
 
+
+
+let i_player: PlayerInternals
+
+function internalize_player() {
+    let p = i_player
+    let [x, y] = [p.i_x, p.i_y]
+    player = { x, y }
+}
+
+let buildings: Building[]
+let player: Player
+let camera: Camera
+
 export type PlayerInternals = {
     i_x: number
     i_y: number
@@ -29,19 +44,14 @@ export type PlayerInternals = {
     rem_y: number
     dx: number
     dy: number
+    ddx: number
+    ddy: number
+    j_buffer: number
+    is_grounded: boolean
+    i_y0: boolean
+    j_used: boolean
+    j_cut: number
 }
-
-let i_player: PlayerInternals
-
-function internalize_player() {
-    let p = i_player
-    let [x, y] = [p.i_x + p.rem_x, p.i_y + p.rem_y]
-    player = { x, y }
-}
-
-let buildings: Building[]
-let player: Player
-let camera: Camera
 
 export function _init() {
 
@@ -51,17 +61,31 @@ export function _init() {
         rem_x: 0,
         rem_y: 0,
         dx: 0,
-        dy: 0
+        dy: 0,
+        ddx: 0,
+        ddy: 0,
+        j_buffer: 0,
+        is_grounded: false,
+        j_used: false,
+        j_cut: 0,
+        i_y0: false
     }
 
     internalize_player()
     camera = { x: player.x - 80, y: player.y - 55 }
 
-    const initial_building = {
+    let initial_building = {
         left: player.x - 20,
         right: player.x + 40,
         top: player.y + 8
     }
+    /*
+    initial_building = {
+        left: player.x - 2000,
+        right: player.x + 4000,
+        top: player.y + 8
+    }
+        */
 
     buildings = [initial_building]
 }
@@ -106,24 +130,121 @@ export function _update(delta: number) {
     if (camera.y > min_visible_building_top - 40) {
         camera.y = min_visible_building_top - 40
     }
+
+
+    i.update()
 }
 
-function update_player(_delta: number) {
+function update_player(delta: number) {
 
-    let step_x = 1
-
-    i_player.i_x += step_x
-    if (player_has_collided()) {
-        i_player.i_x -= step_x
+    let i_y0 = i_player.i_y0
+    let i_y = false
+    if (i.btn()) {
+        i_y = true
+    } else {
+        i_y = false
+        if (i_y0) {
+            i_player.j_buffer = 100
+            i_player.j_cut = 200
+        }
     }
 
-    let step_y = 1
+    i_player.j_buffer = appr(i_player.j_buffer, 0, delta)
+    i_player.j_cut = appr(i_player.j_cut, 0, delta)
 
-    i_player.i_y += step_y
-    if (player_has_collided()) {
-        i_player.i_y -= step_y
+    i_player.i_y0 = i_y
+
+    if (i_y || i_player.j_buffer > 0) {
+        if (!i_player.j_used) {
+            //console.log('jump', i_player.is_grounded)
+
+            i_player.dy = -400
+            i_player.ddy = 1000
+
+            i_player.j_buffer = 0
+            i_player.j_used = true
+        }
     }
 
+    if (i_player.is_grounded) {
+        i_player.j_used = false
+    }
+
+
+    const max_deccel_dy = 200
+
+    const max_accel_fall_dy = 200
+    const max_fall_dy = 200
+    if (i_player.j_cut > 0) {
+        if (i_player.dy < 0) {
+            i_player.ddy = 2888
+            i_player.dy = appr(i_player.dy, 0, i_player.ddy * delta / 1000)
+        } else {
+            console.log(i_player.dy)
+            i_player.ddy = 1000
+            i_player.dy = appr(i_player.dy, max_fall_dy * 2, i_player.ddy * delta / 1000)
+        }
+    } else if (i_player.dy < 0) {
+        i_player.ddy = appr(i_player.ddy, max_deccel_dy, 200 * delta / 1000)
+        i_player.dy = appr(i_player.dy, 0, i_player.ddy * delta / 1000)
+    } else {
+        i_player.ddy = appr(i_player.ddy, max_accel_fall_dy, 200 * delta / 1000)
+        i_player.dy = appr(i_player.dy, max_fall_dy, i_player.ddy * delta / 1000)
+    }
+
+
+    const max_accel_x1 = 20
+    if (i_player.dx < 60) {
+
+        let reach_max_accel_x1_speed = i_player.ddx > max_accel_x1 ? 200 : 100
+        i_player.ddx = appr(i_player.ddx, max_accel_x1, reach_max_accel_x1_speed * delta / 1000)
+        i_player.dx = appr(i_player.dx, 60, i_player.ddx * delta / 1000)
+    }
+
+
+    update_physics_player(delta)
+}
+
+function update_physics_player(delta: number) {
+
+    let step_x = Math.sign(i_player.dx)
+    let a = Math.abs(i_player.dx * delta / 1000 + i_player.rem_x)
+    let t = Math.floor(a)
+
+    i_player.rem_x = (a - t) * step_x
+
+    for (let i = 0; i < t; i++) {
+        i_player.i_x += step_x
+
+        internalize_player()
+        let p_box: XYWH = [player.x, player.y, 1, 8]
+        if (player_has_collided(p_box)) {
+            i_player.i_x -= step_x
+            break
+        }
+    }
+
+    let step_y = Math.sign(i_player.dy)
+    let ay = Math.abs(i_player.dy * delta / 1000 + i_player.rem_y)
+    let ty = Math.floor(a)
+
+    i_player.rem_y = (ay - ty) * step_y
+
+    internalize_player()
+    let p_box: XYWH = [player.x, player.y + 1, 1, 8]
+    i_player.is_grounded = !!player_has_collided(p_box)
+
+    for (let i = 0; i < t; i++) {
+        i_player.i_y += step_y
+        internalize_player()
+        let p_box: XYWH = [player.x, player.y, 1, 8]
+        if (player_has_collided(p_box)) {
+            i_player.i_y -= step_y
+            i_player.is_grounded = true
+            break
+        }
+        i_player.is_grounded = false
+    }
 }
 
 export function _render(_alpha: number) {
@@ -183,12 +304,10 @@ function gen_building() {
     }
 }
 
-function player_has_collided() {
-
-    let p_box: XYWH = [player.x, player.y, 1, 8]
+function player_has_collided(p_box: XYWH) {
     for (let b of buildings) {
         if (box_intersect(p_box, [b.left, b.top, b.right - b.left, 90])) {
-            return true
+            return b
         }
     }
     return false
@@ -267,19 +386,18 @@ export function arr_shuffle<A>(array: Array<A>) {
 
 export function appr(value: number, target: number, by: number): number {
     if (value < target) {
-        value += by
-        if (value > target) {
-            value = target
-        }
+        return Math.min(value + by, target)
     } else if (value > target) {
-        value -= by
-        if (value < target) {
-            value = target
-        }
+        return Math.max(value - by, target)
     }
     return value
 }
 
 export function lerp(a: number, b: number, t: number): number {
     return a + (b - a) * t
+}
+
+let i: TouchMouse
+export function _set_el(el: HTMLElement) {
+    i = TouchMouse(el)
 }
