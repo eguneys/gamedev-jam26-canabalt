@@ -57,7 +57,7 @@ export function _init() {
 
     i_player = { 
         i_x: 20, 
-        i_y: 40,
+        i_y: 0,
         rem_x: 0,
         rem_y: 0,
         dx: 0,
@@ -72,7 +72,7 @@ export function _init() {
     }
 
     internalize_player()
-    camera = { x: player.x - 80, y: player.y - 55 }
+    camera = { x: player.x - 80, y: player.y - 15 }
 
     let initial_building = {
         left: player.x - 20,
@@ -99,9 +99,16 @@ export function _update(delta: number) {
     gen_building()
 
     internalize_player()
-    camera.x = lerp(camera.x, player.x - 80, 0.55)
-    camera.y = lerp(camera.y, player.y - 55, 0.55)
 
+
+    camera.x = lerp(camera.x, player.x - 80, 0.55)
+
+    if (player.y - camera.y < 15) {
+        camera.y = lerp(camera.y, player.y - 15, 0.5)
+    }
+    if (camera.y < 0) {
+        camera.y = lerp(camera.y, 0, 0.5)
+    }
 
     let left_visible_building = buildings.find(_ => _.right > camera.x && _.right < camera.x + 160)
     let full_visible_building = buildings.find(_ => _.left > camera.x && _.right < camera.x + 160)
@@ -129,7 +136,7 @@ export function _update(delta: number) {
     }
 
     if (camera.y > min_visible_building_top - 40) {
-        camera.y = min_visible_building_top - 40
+        //camera.y = min_visible_building_top - 40
     }
 
 
@@ -159,7 +166,7 @@ function update_player(delta: number) {
         if (!i_player.j_used) {
             //console.log('jump', i_player.is_grounded)
 
-            i_player.dy = -400
+            i_player.dy = -300
             i_player.ddy = 1000
 
             i_player.j_buffer = 0
@@ -181,7 +188,6 @@ function update_player(delta: number) {
             i_player.ddy = 2888
             i_player.dy = appr(i_player.dy, 0, i_player.ddy * delta / 1000)
         } else {
-            console.log(i_player.dy)
             i_player.ddy = 1000
             i_player.dy = appr(i_player.dy, max_fall_dy * 2, i_player.ddy * delta / 1000)
         }
@@ -282,25 +288,18 @@ function gen_building() {
         }
     }
 
-    let left = buildings[0]
     let right = buildings[buildings.length - 1]
 
-
     let x = player.x
-
-    if (x - left.right < 90) {
-        let width = 100
-        let gap = 10
-        let inc_top = rnd_sint(10, 12)
-        let top = left.top + inc_top
-        buildings.unshift(new_building(left.left - width - gap, width, top))
-    } 
     
     if (right.left - x < 90) {
         let width = 100
         let gap = 10
-        let inc_top = rnd_sint(10, 12)
+        let inc_top = rnd_sint(0, 12)
         let top = right.top + inc_top
+        if (top < 5) {
+            top += 10
+        }
         buildings.push(new_building(right.right + gap, width, top))
     }
 }
